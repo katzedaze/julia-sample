@@ -159,17 +159,32 @@ end
 # ============================================================
 
 function demo_matrix()
-    println("\n--- 行列演算 ---")
+    println("\n--- 行列演算 (3×3) ---")
 
     A = [1 2 3; 4 5 6; 7 8 9]
     B = [9 8 7; 6 5 4; 3 2 1]
 
-    println("  A = $A")
-    println("  B = $B")
     println("  A × B = $(A * B)")
     println("  A' (転置) = $(A')")
     println("  tr(A) (トレース) = $(sum(A[i, i] for i in 1:3))")
-    println("  det に近い特異値: ", let F = svd(A); round.(F.S, digits=3); end)
+end
+
+function demo_matrix_large()
+    println("\n--- 行列演算 (500×500) ---")
+
+    n = 500
+    A = rand(n, n)
+    B = rand(n, n)
+
+    C = A * B
+    D = A'
+    tr_val = sum(A[i, i] for i in 1:n)
+    F = svd(A)
+
+    println("  行列積 C[1,1] = $(round(C[1,1], digits=4))")
+    println("  転置 D[1,1] = $(round(D[1,1], digits=4))")
+    println("  トレース = $(round(tr_val, digits=4))")
+    println("  SVD 最大特異値 = $(round(F.S[1], digits=4))")
 end
 
 # ============================================================
@@ -178,29 +193,48 @@ end
 
 using LinearAlgebra: svd
 
-function main()
-    println("=" ^ 50)
-    println(" Julia サンプルプログラム (v$(VERSION))")
-    println("=" ^ 50)
+function timed(f::Function, label::String; warmup::Bool=false)
+    if warmup
+        redirect_stdout(devnull) do
+            f()  # ウォームアップ (出力抑制)
+        end
+    end
+    t = @elapsed f()
+    ms = round(t * 1000, digits=3)
+    println("[TIME] $label: $ms ms")
+    ms
+end
 
-    # 1. 多重ディスパッチ
+function run_shapes()
     println("\n--- 図形と多重ディスパッチ ---")
     shapes = [Circle(5.0), Rectangle(4.0, 6.0), Triangle(3.0, 4.0)]
     for s in shapes
         describe(s)
     end
+end
 
-    # 2. 配列操作
-    demo_array_operations()
+function main()
+    # ウォームアップ: 全関数を1回実行して JIT を完了させる (出力は破棄)
+    redirect_stdout(devnull) do
+        run_shapes()
+        demo_array_operations()
+        demo_statistics()
+        demo_benchmark()
+        demo_matrix()
+        demo_matrix_large()
+    end
 
-    # 3. 統計計算
-    demo_statistics()
+    println("=" ^ 50)
+    println(" Julia サンプルプログラム (v$(VERSION))")
+    println("=" ^ 50)
 
-    # 4. ベンチマーク
-    demo_benchmark()
-
-    # 5. 行列演算
-    demo_matrix()
+    # 2回目: 計測対象 (JIT 済み、stdout に出力)
+    timed(run_shapes, "図形と多重ディスパッチ"; warmup=true)
+    timed(demo_array_operations, "配列操作"; warmup=true)
+    timed(demo_statistics, "統計計算"; warmup=true)
+    timed(demo_benchmark, "フィボナッチ"; warmup=true)
+    timed(demo_matrix, "行列演算 (3×3)"; warmup=true)
+    timed(demo_matrix_large, "行列演算 (500×500)"; warmup=true)
 
     println("\n" * "=" ^ 50)
     println(" 完了!")

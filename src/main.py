@@ -8,6 +8,7 @@ Python サンプルプログラム
 """
 
 import math
+import sys
 import time
 from abc import ABC, abstractmethod
 
@@ -184,33 +185,56 @@ def demo_benchmark():
 # 5. 行列演算
 # ============================================================
 
-def mat_mul(a: list[list[int]], b: list[list[int]]) -> list[list[int]]:
+def mat_mul(a: list[list], b: list[list]) -> list[list]:
     n = len(a)
     return [[sum(a[i][k] * b[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
 
 
-def mat_transpose(a: list[list[int]]) -> list[list[int]]:
+def mat_transpose(a: list[list]) -> list[list]:
     return [list(row) for row in zip(*a)]
 
 
 def demo_matrix():
-    print("\n--- 行列演算 ---")
+    print("\n--- 行列演算 (3×3) ---")
 
     A = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     B = [[9, 8, 7], [6, 5, 4], [3, 2, 1]]
 
-    print(f"  A = {A}")
-    print(f"  B = {B}")
     print(f"  A × B = {mat_mul(A, B)}")
     print(f"  A' (転置) = {mat_transpose(A)}")
     print(f"  tr(A) (トレース) = {sum(A[i][i] for i in range(3))}")
+
+
+def demo_matrix_large():
+    import random
+    random.seed(42)
+
+    print("\n--- 行列演算 (500×500) ---")
+
+    n = 500
+    A = [[random.random() for _ in range(n)] for _ in range(n)]
+    B = [[random.random() for _ in range(n)] for _ in range(n)]
+
+    C = mat_mul(A, B)
+    D = mat_transpose(A)
+    tr_val = sum(A[i][i] for i in range(n))
+
+    print(f"  行列積 C[0][0] = {round(C[0][0], 4)}")
+    print(f"  転置 D[0][0] = {round(D[0][0], 4)}")
+    print(f"  トレース = {round(tr_val, 4)}")
 
 
 # ============================================================
 # メイン実行
 # ============================================================
 
-import sys
+def timed(label: str, func):
+    start = time.perf_counter()
+    func()
+    elapsed_ms = round((time.perf_counter() - start) * 1000, 3)
+    print(f"[TIME] {label}: {elapsed_ms} ms")
+    return elapsed_ms
+
 
 def main():
     version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -219,22 +243,28 @@ def main():
     print("=" * 50)
 
     # 1. 多態性
-    print("\n--- 図形と多態性 ---")
-    shapes = [Circle(5.0), Rectangle(4.0, 6.0), Triangle(3.0, 4.0)]
-    for s in shapes:
-        s.describe()
+    def run_shapes():
+        print("\n--- 図形と多態性 ---")
+        shapes = [Circle(5.0), Rectangle(4.0, 6.0), Triangle(3.0, 4.0)]
+        for s in shapes:
+            s.describe()
+
+    timed("図形と多態性", run_shapes)
 
     # 2. 配列操作
-    demo_array_operations()
+    timed("配列操作", demo_array_operations)
 
     # 3. 統計計算
-    demo_statistics()
+    timed("統計計算", demo_statistics)
 
     # 4. ベンチマーク
-    demo_benchmark()
+    timed("フィボナッチ", demo_benchmark)
 
     # 5. 行列演算
-    demo_matrix()
+    timed("行列演算 (3×3)", demo_matrix)
+
+    # 6. 大規模行列演算
+    timed("行列演算 (500×500)", demo_matrix_large)
 
     print("\n" + "=" * 50)
     print(" 完了!")
